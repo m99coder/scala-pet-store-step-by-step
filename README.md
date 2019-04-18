@@ -3,6 +3,14 @@
 > An implementation of the Java Pet Store using FP techniques in Scala  
 > An analysis of [https://github.com/pauljamescleary/scala-pet-store](https://github.com/pauljamescleary/scala-pet-store), explained step by step
 
+**Usage**
+
+Every step is accessible via a respective tag, e.g. `step-2`, like this:
+
+```bash
+$ git checkout tags/step-2
+```
+
 ## 1. Create the skeleton
 
 We just use `sbt new m99coder/cats-minimal.g8` to create a minimal project skeleton with Cats Core 1.6.0 and Cats Effect 1.2.0. The project is based on this [template](https://github.com/m99coder/cats-minimal.g8).
