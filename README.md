@@ -212,3 +212,43 @@ Now we create an algebra in `domain/pets/PetValidationAlgebra.scala` and an inte
 petRepository = DoobiePetRepositoryInterpreter[F](transactor)
 _             = PetValidationInterpreter[F](petRepository)
 ```
+
+## 7. Service
+
+The service is the entry point to our domain. It works with the provided repository and validation algebras to implement behavior. The only file we add is `domain/pets/PetService.scala`.
+
+```scala
+package io.m99.petstore.domain.pets
+
+import cats.Monad
+import cats.data.EitherT
+import cats.syntax.functor._
+import io.m99.petstore.domain.PetNotFoundError
+
+class PetService[F[_]](repositoryAlgebra: PetRepositoryAlgebra[F],
+                       validationAlgebra: PetValidationAlgebra[F]) {
+  def create(pet: Pet): F[Pet] = repositoryAlgebra.create(pet)
+  def update(pet: Pet)(implicit M: Monad[F]): EitherT[F, PetNotFoundError.type, Pet] =
+    for {
+      _     <- validationAlgebra.doesNotExist(pet.id)
+      saved <- EitherT.fromOptionF(repositoryAlgebra.update(pet), PetNotFoundError)
+    } yield saved
+  def get(id: Long)(implicit M: Monad[F]): EitherT[F, PetNotFoundError.type, Pet] =
+    EitherT.fromOptionF(repositoryAlgebra.get(id), PetNotFoundError)
+  def delete(id: Long)(implicit M: Monad[F]): F[Unit] = repositoryAlgebra.delete(id).as(())
+}
+
+object PetService {
+  def apply[F[_]: Monad](repositoryAlgebra: PetRepositoryAlgebra[F],
+                         validationAlgebra: PetValidationAlgebra[F]) =
+    new PetService[F](repositoryAlgebra, validationAlgebra)
+}
+```
+
+Now we can use it again in the for-comprehension of our `Server.scala`.
+
+```scala
+petRepository = DoobiePetRepositoryInterpreter[F](transactor)
+petValidation = PetValidationInterpreter[F](petRepository)
+_             = PetService[F](petRepository, petValidation)
+``` 

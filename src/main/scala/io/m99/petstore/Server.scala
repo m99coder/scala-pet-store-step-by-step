@@ -5,7 +5,7 @@ import cats.syntax.functor._
 import doobie.util.ExecutionContexts
 import io.circe.config.parser
 import io.m99.petstore.config.{DatabaseConfig, PetStoreConfig}
-import io.m99.petstore.domain.pets.PetValidationInterpreter
+import io.m99.petstore.domain.pets.{PetService, PetValidationInterpreter}
 import io.m99.petstore.infrastructure.repository.doobie.DoobiePetRepositoryInterpreter
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.{Server => H4Server}
@@ -19,7 +19,8 @@ object Server extends IOApp {
       cachedThreadPool <- ExecutionContexts.cachedThreadPool[F]
       transactor       <- DatabaseConfig.transactor(conf.database, fixedThreadPool, cachedThreadPool)
       petRepository = DoobiePetRepositoryInterpreter[F](transactor)
-      _             = PetValidationInterpreter[F](petRepository)
+      petValidation = PetValidationInterpreter[F](petRepository)
+      _             = PetService[F](petRepository, petValidation)
       _ <- Resource.liftF(DatabaseConfig.initializeDb(conf.database))
       server <- BlazeServerBuilder[F]
         .bindHttp(conf.server.port, conf.server.host)
