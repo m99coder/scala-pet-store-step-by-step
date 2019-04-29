@@ -170,7 +170,7 @@ First we add our domain object `Pet` in `domain/pets/Pet.scala` and an Algebraic
 val EnumeratumCirceVersion = "1.5.20"
 
 libraryDependencies ++= Seq(
-  "com.beachape"   %% "enumeratum-circe"    % EnumeratumCirceVersion
+  "com.beachape"   %% "enumeratum-circe" % EnumeratumCirceVersion
 )
 ```
 
