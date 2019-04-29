@@ -267,7 +267,7 @@ server <- BlazeServerBuilder[F]
   .resource
 ```
 
-Now you can test the application using `curl` like shown below.
+Now you can interact with the application using `curl` like shown below.
 
 ```bash
 $ # Creating a pet
