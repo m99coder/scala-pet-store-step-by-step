@@ -106,11 +106,11 @@ petstore {
 
 To reflect it using Circe Config, we
 
-* add `src/main/scala/io/m99/petstore/config/DatabaseConfig.scala`,
-* extend `src/main/scala/io/m99/petstore/config/PetStoreConfig.scala`, and
-* extend `src/main/scala/io/m99/petstore/config/package.scala`.  
+* add `config/DatabaseConfig.scala`,
+* extend `config/PetStoreConfig.scala`, and
+* extend `config/package.scala`.  
 
-Finally we can use the configuration to create a database transactor in `/src/main/scala/io/m99/petstore/Server.scala`.
+Finally we can use the configuration to create a database transactor in `Server.scala`.
 
 ```scala
 package io.m99.petstore
@@ -143,7 +143,7 @@ object Server extends IOApp {
 
 ## 4. Apply database migrations
 
-Database migrations are driven by Flyway, so we add `flyway-core` version `5.2.4` to our `/build.sbt`. The migrations itself are created within the `/src/main/resources/db/migration` folder and follow a certain versioning schema. To actually run the migrations we add the `initializeDb` method to `/src/main/scala/io/m99/petstore/config/DatabaseConfig.scala`.
+Database migrations are driven by Flyway, so we add `flyway-core` version `5.2.4` to our `/build.sbt`. The migrations itself are created within the `/src/main/resources/db/migration` folder and follow a certain versioning schema. To actually run the migrations we add the `initializeDb` method to `config/DatabaseConfig.scala`.
 
 ```scala
 def initializeDb[F[_]](config: DatabaseConfig)(implicit S: Sync[F]): F[Unit] =
@@ -156,8 +156,40 @@ def initializeDb[F[_]](config: DatabaseConfig)(implicit S: Sync[F]): F[Unit] =
     .as(())
 ``` 
 
-Finally we execute the migrations in the for-comprehension of our `createServer` method in `/src/main/scala/io/m99/petstore/Server.scala`.
+Finally we execute the migrations in the for-comprehension of our `createServer` method in `Server.scala`.
 
 ```scala
 _ <- Resource.liftF(DatabaseConfig.initializeDb(conf.database))
+```
+
+## 5. Add domain object, algebra and interpreter
+
+First we add our domain object `Pet` in `domain/pets/Pet.scala` and an Algebraic Data Type (ADT) for the `status` property in `domain/pets/PetStatus.scala`. For the ADT we use a library called `enumeratum`, which we need to add to `/build.sbt`.
+
+```scala
+val EnumeratumCirceVersion = "1.5.20"
+
+libraryDependencies ++= Seq(
+  "com.beachape"   %% "enumeratum-circe"    % EnumeratumCirceVersion
+)
+```
+
+The algebra defines the API we offer to interact with our domain object `Pet`. We define it in the tagless final matter using `F` in `domain/pets/PetRepositoryAlgebra.scala`.
+
+```scala
+package io.m99.petstore.domain.pets
+
+trait PetRepositoryAlgebra[F[_]] {
+  def create(pet: Pet): F[Pet]
+  def update(pet: Pet): F[Option[Pet]]
+  def get(id: Long): F[Option[Pet]]
+  def delete(id: Long): F[Option[Pet]]
+}
+```
+
+To connect the algebra with a concrete interpreter we create `infrastructure/repository/doobie/DoobiePetRepositoryInterpreter.scala` and use this one in our `Server.scala`.
+
+```scala
+transactor <- DatabaseConfig.transactor(conf.database, fixedThreadPool, cachedThreadPool)
+_ = DoobiePetRepositoryInterpreter[F](transactor)
 ```
