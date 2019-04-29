@@ -251,4 +251,54 @@ Now we can use it again in the for-comprehension of our `Server.scala`.
 petRepository = DoobiePetRepositoryInterpreter[F](transactor)
 petValidation = PetValidationInterpreter[F](petRepository)
 _             = PetService[F](petRepository, petValidation)
-``` 
+```
+
+## 8. Endpoint
+
+The most important part of creating the endpoint is located in `infrastructure/endpoint/PetEndpoints.scala`, which contains endpoint for different HTTP methods utilizing the provided `PetService`. To connect all the dots, change `Server.scala` like this.
+
+```scala
+services = PetEndpoints.endpoints[F](petService)
+httpApp  = Router("/" -> services).orNotFound
+_ <- Resource.liftF(DatabaseConfig.initializeDb(conf.database))
+server <- BlazeServerBuilder[F]
+  .bindHttp(conf.server.port, conf.server.host)
+  .withHttpApp(httpApp)
+  .resource
+```
+
+Now you can test the application using `curl` like shown below.
+
+```bash
+$ # Creating a pet
+$ curl -i \
+    -H "Content-Type: application/json" \
+    -d '{
+          "category": "Cat",
+          "bio": "I am fuzzy",
+          "name": "Harry",
+          "tags": [],
+          "photoUrls": [],
+          "status": "Available"
+        }' \
+    -X POST http://localhost:8080/pets
+    
+$ # Getting a pet
+$ curl -i http://localhost:8080/pets/1
+
+$ # Updating a pet
+$ curl -i \
+    -H "Content-Type: application/json" \
+    -d '{
+          "category": "Cat",
+          "bio": "I am fuzzy",
+          "name": "Harry",
+          "tags": [],
+          "photoUrls": [],
+          "status": "Pending"
+        }' \
+    -X PUT http://localhost:8080/pets/1
+    
+$ # Deleting a pet
+$ curl -i -X DELETE http://localhost:8080/pets/1 
+```

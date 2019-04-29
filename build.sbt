@@ -25,6 +25,8 @@ libraryDependencies ++= Seq(
   "io.circe"       %% "circe-config"        % CirceConfigVersion,
   "com.beachape"   %% "enumeratum-circe"    % EnumeratumCirceVersion,
   "org.http4s"     %% "http4s-blaze-server" % Http4sVersion,
+  "org.http4s"     %% "http4s-circe"        % Http4sVersion,
+  "org.http4s"     %% "http4s-dsl"          % Http4sVersion,
   "org.tpolecat"   %% "doobie-core"         % DoobieVersion,
   "org.tpolecat"   %% "doobie-hikari"       % DoobieVersion,
   "com.h2database" % "h2"                   % H2Version,
