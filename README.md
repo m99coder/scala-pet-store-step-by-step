@@ -174,7 +174,7 @@ libraryDependencies ++= Seq(
 )
 ```
 
-The algebra defines the API we offer to interact with our domain object `Pet`. We define it in the tagless final matter using `F` in `domain/pets/PetRepositoryAlgebra.scala`.
+The algebra defines the API we offer to interact with our domain object `Pet`. We define it in the tagless final manner using `F` in `domain/pets/PetRepositoryAlgebra.scala`.
 
 ```scala
 package io.m99.petstore.domain.pets
@@ -191,5 +191,24 @@ To connect the algebra with a concrete interpreter we create `infrastructure/rep
 
 ```scala
 transactor <- DatabaseConfig.transactor(conf.database, fixedThreadPool, cachedThreadPool)
-_ = DoobiePetRepositoryInterpreter[F](transactor)
+_          = DoobiePetRepositoryInterpreter[F](transactor)
+```
+
+## 6. Validation
+
+We want to separate logical errors from business errors, which are modeled with their own ADT. Therefore we create `domain/ValidationError.scala`.
+
+```scala
+package io.m99.petstore.domain
+
+sealed trait ValidationError extends Product with Serializable
+
+case object PetNotFoundError extends ValidationError
+```
+
+Now we create an algebra in `domain/pets/PetValidationAlgebra.scala` and an interpreter of this algebra in `domain/pets/PetValidationInterpreter.scala` for handling our business errors. As with the previous steps we finally include our validation interpreter into the for-comprehension of `Server.scala`.
+
+```scala
+petRepository = DoobiePetRepositoryInterpreter[F](transactor)
+_             = PetValidationInterpreter[F](petRepository)
 ```
