@@ -110,7 +110,7 @@ To reflect it using Circe Config, we
 * extend `src/main/scala/io/m99/petstore/config/PetStoreConfig.scala`, and
 * extend `src/main/scala/io/m99/petstore/config/package.scala`.  
 
-Finally we can use the configuration to create a database transactor in `/src/main/scala/io.m99.petstore/Server.scala`.
+Finally we can use the configuration to create a database transactor in `/src/main/scala/io/m99/petstore/Server.scala`.
 
 ```scala
 package io.m99.petstore
@@ -139,4 +139,25 @@ object Server extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     createServer.use(_ => IO.never).as(ExitCode.Success)
 }
+```
+
+## 4. Apply database migrations
+
+Database migrations are driven by Flyway, so we add `flyway-core` version `5.2.4` to our `/build.sbt`. The migrations itself are created within the `/src/main/resources/db/migration` folder and follow a certain versioning schema. To actually run the migrations we add the `initializeDb` method to `/src/main/scala/io/m99/petstore/config/DatabaseConfig.scala`.
+
+```scala
+def initializeDb[F[_]](config: DatabaseConfig)(implicit S: Sync[F]): F[Unit] =
+  S.delay {
+      val fw: Flyway = {
+        Flyway.configure().dataSource(config.url, config.user, config.password).load()
+      }
+      fw.migrate()
+    }
+    .as(())
+``` 
+
+Finally we execute the migrations in the for-comprehension of our `createServer` method in `/src/main/scala/io/m99/petstore/Server.scala`.
+
+```scala
+_ <- Resource.liftF(DatabaseConfig.initializeDb(conf.database))
 ```

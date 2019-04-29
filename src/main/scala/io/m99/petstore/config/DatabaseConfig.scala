@@ -1,7 +1,9 @@
 package io.m99.petstore.config
 
-import cats.effect.{Async, ContextShift, Resource}
+import cats.effect.{Async, ContextShift, Resource, Sync}
+import cats.syntax.functor._
 import doobie.hikari.HikariTransactor
+import org.flywaydb.core.Flyway
 
 import scala.concurrent.ExecutionContext
 
@@ -23,4 +25,13 @@ object DatabaseConfig {
                                             config.password,
                                             fixedThreadPool,
                                             cachedThreadPool)
+
+  def initializeDb[F[_]](config: DatabaseConfig)(implicit S: Sync[F]): F[Unit] =
+    S.delay {
+        val fw: Flyway = {
+          Flyway.configure().dataSource(config.url, config.user, config.password).load()
+        }
+        fw.migrate()
+      }
+      .as(())
 }
