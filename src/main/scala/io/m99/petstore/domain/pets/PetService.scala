@@ -9,12 +9,12 @@ class PetService[F[_]](repositoryAlgebra: PetRepositoryAlgebra[F],
                        validationAlgebra: PetValidationAlgebra[F]) {
   def create(pet: Pet)(implicit M: Monad[F]): EitherT[F, PetAlreadyExistsError, Pet] =
     for {
-      _     <- validationAlgebra.doesAlreadyExist(pet)
+      _     <- validationAlgebra.doesNotExist(pet)
       saved <- EitherT.liftF(repositoryAlgebra.create(pet))
     } yield saved
   def update(pet: Pet)(implicit M: Monad[F]): EitherT[F, PetNotFoundError.type, Pet] =
     for {
-      _     <- validationAlgebra.doesNotExist(pet.id)
+      _     <- validationAlgebra.exists(pet.id)
       saved <- EitherT.fromOptionF(repositoryAlgebra.update(pet), PetNotFoundError)
     } yield saved
   def get(id: Long)(implicit M: Monad[F]): EitherT[F, PetNotFoundError.type, Pet] =

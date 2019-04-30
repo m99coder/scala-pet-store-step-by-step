@@ -10,7 +10,7 @@ import io.m99.petstore.domain.{PetAlreadyExistsError, PetNotFoundError}
 class PetValidationInterpreter[F[_]: Monad](repositoryAlgebra: PetRepositoryAlgebra[F])
     extends PetValidationAlgebra[F] {
 
-  def doesAlreadyExist(pet: Pet): EitherT[F, PetAlreadyExistsError, Unit] =
+  def doesNotExist(pet: Pet): EitherT[F, PetAlreadyExistsError, Unit] =
     EitherT {
       repositoryAlgebra.findByNameAndCategory(pet.name, pet.category).map { matches =>
         if (matches.forall(possibleMatch => possibleMatch.bio != pet.bio)) {
@@ -21,7 +21,7 @@ class PetValidationInterpreter[F[_]: Monad](repositoryAlgebra: PetRepositoryAlge
       }
     }
 
-  def doesNotExist(petId: Option[Long]): EitherT[F, PetNotFoundError.type, Unit] =
+  def exists(petId: Option[Long]): EitherT[F, PetNotFoundError.type, Unit] =
     EitherT {
       petId match {
         case Some(id) =>

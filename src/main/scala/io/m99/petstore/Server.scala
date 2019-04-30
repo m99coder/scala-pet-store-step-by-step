@@ -8,10 +8,12 @@ import io.circe.config.parser
 import io.m99.petstore.config.{DatabaseConfig, PetStoreConfig}
 import io.m99.petstore.domain.orders.OrderService
 import io.m99.petstore.domain.pets.{PetService, PetValidationInterpreter}
-import io.m99.petstore.infrastructure.endpoint.{OrderEndpoints, PetEndpoints}
+import io.m99.petstore.domain.users.{UserService, UserValidationInterpreter}
+import io.m99.petstore.infrastructure.endpoint.{OrderEndpoints, PetEndpoints, UserEndpoints}
 import io.m99.petstore.infrastructure.repository.doobie.{
   DoobieOrderRepositoryInterpreter,
-  DoobiePetRepositoryInterpreter
+  DoobiePetRepositoryInterpreter,
+  DoobieUserRepositoryInterpreter
 }
 import org.http4s.syntax.kleisli._
 import org.http4s.server.blaze.BlazeServerBuilder
@@ -30,8 +32,13 @@ object Server extends IOApp {
       petService      = PetService[F](petRepository, petValidation)
       orderRepository = DoobieOrderRepositoryInterpreter[F](transactor)
       orderService    = OrderService[F](orderRepository)
-      services        = PetEndpoints.endpoints[F](petService) <+> OrderEndpoints.endpoints[F](orderService)
-      httpApp         = Router("/" -> services).orNotFound
+      userRepository  = DoobieUserRepositoryInterpreter[F](transactor)
+      userValidation  = UserValidationInterpreter[F](userRepository)
+      userService     = UserService[F](userRepository, userValidation)
+      services = PetEndpoints.endpoints[F](petService) <+>
+        OrderEndpoints.endpoints[F](orderService) <+>
+        UserEndpoints.endpoints[F](userService)
+      httpApp = Router("/" -> services).orNotFound
       _ <- Resource.liftF(DatabaseConfig.initializeDb(conf.database))
       server <- BlazeServerBuilder[F]
         .bindHttp(conf.server.port, conf.server.host)
