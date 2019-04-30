@@ -21,7 +21,8 @@ class PetService[F[_]](repositoryAlgebra: PetRepositoryAlgebra[F],
     EitherT.fromOptionF(repositoryAlgebra.get(id), PetNotFoundError)
   def delete(id: Long)(implicit M: Monad[F]): F[Unit] = repositoryAlgebra.delete(id).as(())
 
-  def list: F[List[Pet]] = repositoryAlgebra.list
+  def list(limit: Int, offset: Int): F[List[Pet]] =
+    repositoryAlgebra.list(limit, offset)
   def findByStatus(statuses: NonEmptyList[PetStatus]): F[List[Pet]] =
     repositoryAlgebra.findByStatus(statuses)
   def findByTag(tags: NonEmptyList[String]): F[List[Pet]] =

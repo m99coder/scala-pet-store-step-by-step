@@ -93,8 +93,8 @@ class DoobiePetRepositoryInterpreter[F[_]: Monad](val transactor: Transactor[F])
   def findByNameAndCategory(name: String, category: String): F[Set[Pet]] =
     selectByNameAndCategory(name, category).to[List].transact(transactor).map(_.toSet)
 
-  def list: F[List[Pet]] =
-    selectAll.to[List].transact(transactor)
+  def list(limit: Int, offset: Int): F[List[Pet]] =
+    SQLPagination.paginate(limit, offset)(selectAll).to[List].transact(transactor)
 
   def findByStatus(statuses: NonEmptyList[PetStatus]): F[List[Pet]] =
     selectByStatus(statuses).to[List].transact(transactor)

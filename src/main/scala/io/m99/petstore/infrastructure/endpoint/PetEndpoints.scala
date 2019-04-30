@@ -1,17 +1,28 @@
 package io.m99.petstore.infrastructure.endpoint
 
+import cats.data.NonEmptyList
+import cats.data.Validated.Valid
 import cats.effect.Effect
 import cats.implicits._
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.m99.petstore.domain.{PetAlreadyExistsError, PetNotFoundError}
-import io.m99.petstore.domain.pets.{Pet, PetService}
-import org.http4s.{EntityDecoder, HttpRoutes}
+import io.m99.petstore.domain.pets.{Pet, PetService, PetStatus}
+import io.m99.petstore.infrastructure.endpoint.Pagination.{
+  OptionalLimitMatcher,
+  OptionalOffsetMatcher
+}
+import org.http4s.{EntityDecoder, HttpRoutes, QueryParamDecoder}
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
 
 class PetEndpoints[F[_]: Effect] extends Http4sDsl[F] {
   implicit val petDecoder: EntityDecoder[F, Pet] = jsonOf[F, Pet]
+
+  implicit val statusQueryParamDecoder: QueryParamDecoder[PetStatus] =
+    QueryParamDecoder[String].map(PetStatus.withName)
+  object StatusMatcher extends OptionalMultiQueryParamDecoderMatcher[PetStatus]("status")
+  object TagMatcher    extends OptionalMultiQueryParamDecoderMatcher[String]("tag")
 
   private def createPetEndpoint(petService: PetService[F]): HttpRoutes[F] =
     HttpRoutes.of[F] {
@@ -63,9 +74,31 @@ class PetEndpoints[F[_]: Effect] extends Http4sDsl[F] {
 
   private def listPetsEndpoint(petService: PetService[F]): HttpRoutes[F] =
     HttpRoutes.of[F] {
-      case GET -> Root / "pets" =>
+      case GET -> Root / "pets" :? OptionalLimitMatcher(limit) :? OptionalOffsetMatcher(offset) =>
         for {
-          retrieved <- petService.list
+          retrieved <- petService.list(limit.getOrElse(10), offset.getOrElse(0))
+          resp      <- Ok(retrieved.asJson)
+        } yield resp
+    }
+
+  private def findPetsByStatusEndpoint(petService: PetService[F]): HttpRoutes[F] =
+    HttpRoutes.of[F] {
+      case GET -> Root / "pets" / "findByStatus" :? StatusMatcher(Valid(Nil)) =>
+        BadRequest("Status parameter not specified")
+      case GET -> Root / "pets" / "findByStatus" :? StatusMatcher(Valid(statuses)) =>
+        for {
+          retrieved <- petService.findByStatus(NonEmptyList.fromListUnsafe(statuses))
+          resp      <- Ok(retrieved.asJson)
+        } yield resp
+    }
+
+  private def findPetsByTagEndpoint(petService: PetService[F]): HttpRoutes[F] =
+    HttpRoutes.of[F] {
+      case GET -> Root / "pets" / "findByTag" :? TagMatcher(Valid(Nil)) =>
+        BadRequest("Tag parameter not specified")
+      case GET -> Root / "pets" / "findByTag" :? TagMatcher(Valid(tags)) =>
+        for {
+          retrieved <- petService.findByTag(NonEmptyList.fromListUnsafe(tags))
           resp      <- Ok(retrieved.asJson)
         } yield resp
     }
@@ -75,7 +108,9 @@ class PetEndpoints[F[_]: Effect] extends Http4sDsl[F] {
       updatePetEndpoint(petService) <+>
       getPetEndpoint(petService) <+>
       deletePetEndpoint(petService) <+>
-      listPetsEndpoint(petService)
+      listPetsEndpoint(petService) <+>
+      findPetsByStatusEndpoint(petService) <+>
+      findPetsByTagEndpoint(petService)
 }
 
 object PetEndpoints {

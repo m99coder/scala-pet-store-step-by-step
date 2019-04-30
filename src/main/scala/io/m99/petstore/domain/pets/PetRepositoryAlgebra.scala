@@ -9,7 +9,7 @@ trait PetRepositoryAlgebra[F[_]] {
   def delete(id: Long): F[Option[Pet]]
 
   def findByNameAndCategory(name: String, category: String): F[Set[Pet]]
-  def list: F[List[Pet]]
+  def list(limit: Int, offset: Int): F[List[Pet]]
   def findByStatus(status: NonEmptyList[PetStatus]): F[List[Pet]]
   def findByTag(tags: NonEmptyList[String]): F[List[Pet]]
 }

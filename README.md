@@ -312,3 +312,18 @@ Now we extend our logic by three different parts:
 3. We finally also adjust our endpoint for creating a pet and add a list endpoint
 
 You can easily demo that the added logic works for case 1 by creating the same pet twice, which now results in a 409 Conflict response and for case 3 by calling `http://localhost:8080/pets` before and after having created a pet.
+
+## 10. Pagination and query parameters
+
+We extend the listing endpoint of pets with optional query parameters for limiting the number of retrieved pets and specifying the offset as well. Therefore `repository/doobie/SQLPagination.scala` was added and incorporated into the domain logic. Additionally `endpoint/Pagination.scala` defines the query parameter decoders used in the endpoint. Finally we add two new endpoints which can be used to retrieve pets by status and tag. Both support multiple occurrences of the defined query parameter identifiers, `status` and `tag`.
+
+```bash
+$ # query pets with custom limit and offset
+$ curl -i http://localhost:8080/pets\?limit\=2\&offset\=2
+
+$ # query pets by status
+$ curl -i http://localhost:8080/pets/findByStatus\?status\=Pending\&status\=Available
+
+$ # query pets by tag
+$ curl -i http://localhost:8080/pets/findByTag\?tag\=goldie\&tag\=labrador
+```
