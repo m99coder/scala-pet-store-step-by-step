@@ -352,7 +352,7 @@ $ curl -i -X DELETE http://localhost:8080/orders/1
 
 ## 12. Users
 
-Now we add our second domain object `User` with all the components required. For now we don’t care about security, in the sense of storing the password in plain text. We will fix that in the next step.
+Now we add our third and last domain object `User` with all the components required. For now we don’t care about security, in the sense of storing the password in plain text. We will fix that in the next step.
 
 ```bash
 $ # Creating a user
@@ -372,4 +372,28 @@ $ curl -i http://localhost:8080/users/johndoe
 
 $ # Deleting a user
 $ curl -i -X DELETE http://localhost:8080/users/johndoe
+```
+
+## 13. Security and Authentication
+
+To apply proper security we hash the provided password using the `tsec` library. If you re-run the `curl` command to create a user you will recognize the hash in the response.
+
+```bash
+$ # Login with correct credentials
+$ curl -i \
+    -H "Content-Type: application/json" \
+    -d '{
+          "userName": "johndoe",
+          "password": "s3cr3t"
+        }' \
+    -X POST http://localhost:8080/login
+    
+$ # Login with incorrect credentials
+$ curl -i \
+    -H "Content-Type: application/json" \
+    -d '{
+          "userName": "johndoe",
+          "password": "foobar"
+        }' \
+    -X POST http://localhost:8080/login
 ```

@@ -17,21 +17,24 @@ val FlywayVersion          = "5.2.4"
 val H2Version              = "1.4.199"
 val Http4sVersion          = "0.20.0-RC1"
 val LogbackVersion         = "1.2.3"
+val TsecVersion            = "0.1.0"
 
 libraryDependencies ++= Seq(
-  "org.typelevel"  %% "cats-core"           % CatsVersion,
-  "org.typelevel"  %% "cats-effect"         % CatsEffectVersion,
-  "io.circe"       %% "circe-generic"       % CirceVersion,
-  "io.circe"       %% "circe-config"        % CirceConfigVersion,
-  "com.beachape"   %% "enumeratum-circe"    % EnumeratumCirceVersion,
-  "org.http4s"     %% "http4s-blaze-server" % Http4sVersion,
-  "org.http4s"     %% "http4s-circe"        % Http4sVersion,
-  "org.http4s"     %% "http4s-dsl"          % Http4sVersion,
-  "org.tpolecat"   %% "doobie-core"         % DoobieVersion,
-  "org.tpolecat"   %% "doobie-hikari"       % DoobieVersion,
-  "com.h2database" % "h2"                   % H2Version,
-  "org.flywaydb"   % "flyway-core"          % FlywayVersion,
-  "ch.qos.logback" % "logback-classic"      % LogbackVersion
+  "org.typelevel"      %% "cats-core"           % CatsVersion,
+  "org.typelevel"      %% "cats-effect"         % CatsEffectVersion,
+  "io.circe"           %% "circe-generic"       % CirceVersion,
+  "io.circe"           %% "circe-config"        % CirceConfigVersion,
+  "com.beachape"       %% "enumeratum-circe"    % EnumeratumCirceVersion,
+  "org.http4s"         %% "http4s-blaze-server" % Http4sVersion,
+  "org.http4s"         %% "http4s-circe"        % Http4sVersion,
+  "org.http4s"         %% "http4s-dsl"          % Http4sVersion,
+  "org.tpolecat"       %% "doobie-core"         % DoobieVersion,
+  "org.tpolecat"       %% "doobie-hikari"       % DoobieVersion,
+  "com.h2database"     % "h2"                   % H2Version,
+  "org.flywaydb"       % "flyway-core"          % FlywayVersion,
+  "ch.qos.logback"     % "logback-classic"      % LogbackVersion,
+  "io.github.jmcardon" %% "tsec-common"         % TsecVersion,
+  "io.github.jmcardon" %% "tsec-password"       % TsecVersion
 )
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")

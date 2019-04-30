@@ -18,6 +18,7 @@ import io.m99.petstore.infrastructure.repository.doobie.{
 import org.http4s.syntax.kleisli._
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.{Router, Server => H4Server}
+import tsec.passwordhashers.jca.BCrypt
 
 object Server extends IOApp {
 
@@ -37,7 +38,7 @@ object Server extends IOApp {
       userService     = UserService[F](userRepository, userValidation)
       services = PetEndpoints.endpoints[F](petService) <+>
         OrderEndpoints.endpoints[F](orderService) <+>
-        UserEndpoints.endpoints[F](userService)
+        UserEndpoints.endpoints[F, BCrypt](userService, BCrypt.syncPasswordHasher[F])
       httpApp = Router("/" -> services).orNotFound
       _ <- Resource.liftF(DatabaseConfig.initializeDb(conf.database))
       server <- BlazeServerBuilder[F]
