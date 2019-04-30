@@ -315,7 +315,7 @@ You can easily demo that the added logic works for case 1 by creating the same p
 
 ## 10. Pagination and query parameters
 
-We extend the listing endpoint of pets with optional query parameters for limiting the number of retrieved pets and specifying the offset as well. Therefore `repository/doobie/SQLPagination.scala` was added and incorporated into the domain logic. Additionally `endpoint/Pagination.scala` defines the query parameter decoders used in the endpoint. Finally we add two new endpoints which can be used to retrieve pets by status and tag. Both support multiple occurrences of the defined query parameter identifiers, `status` and `tag`.
+We extend the listing endpoint of pets with optional query parameters for limiting the number of retrieved pets and specifying the offset as well. Therefore `infrastructure/repository/doobie/SQLPagination.scala` was added and incorporated into the domain logic. Additionally `infrastructure/endpoint/Pagination.scala` defines the query parameter decoders used in the endpoint. Finally we add two new endpoints which can be used to retrieve pets by status and tag. Both support multiple occurrences of the defined query parameter identifiers, `status` and `tag`.
 
 ```bash
 $ # query pets with custom limit and offset
@@ -326,4 +326,26 @@ $ curl -i http://localhost:8080/pets/findByStatus\?status\=Pending\&status\=Avai
 
 $ # query pets by tag
 $ curl -i http://localhost:8080/pets/findByTag\?tag\=goldie\&tag\=labrador
+```
+
+## 11. Orders
+
+Now we add our second domain object `Order` with all the components required. Be aware that the pet needs to exist in the database before you create an order referencing it, otherwise your query will result in an Internal Server Error.
+
+```bash
+$ # Creating an order
+$ curl -i \
+    -H "Content-Type: application/json" \
+    -d '{
+          "petId": 1,
+          "status": "Placed",
+          "complete": false
+        }' \
+    -X POST http://localhost:8080/orders
+    
+$ # Getting an order
+$ curl -i http://localhost:8080/orders/1
+
+$ # Deleting an order
+$ curl -i -X DELETE http://localhost:8080/orders/1
 ```

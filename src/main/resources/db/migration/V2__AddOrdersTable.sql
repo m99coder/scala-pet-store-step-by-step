@@ -1,0 +1,7 @@
+CREATE TABLE orders(
+  id BIGSERIAL PRIMARY KEY,
+  pet_id int8 NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+  ship_date TIMESTAMP NULL,
+  status VARCHAR NOT NULL,
+  complete BOOLEAN NOT NULL
+);

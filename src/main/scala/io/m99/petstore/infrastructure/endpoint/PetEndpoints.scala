@@ -3,18 +3,20 @@ package io.m99.petstore.infrastructure.endpoint
 import cats.data.NonEmptyList
 import cats.data.Validated.Valid
 import cats.effect.Effect
-import cats.implicits._
+import cats.syntax.flatMap._
+import cats.syntax.functor._
+import cats.syntax.semigroupk._
 import io.circe.generic.auto._
 import io.circe.syntax._
-import io.m99.petstore.domain.{PetAlreadyExistsError, PetNotFoundError}
 import io.m99.petstore.domain.pets.{Pet, PetService, PetStatus}
+import io.m99.petstore.domain.{PetAlreadyExistsError, PetNotFoundError}
 import io.m99.petstore.infrastructure.endpoint.Pagination.{
   OptionalLimitMatcher,
   OptionalOffsetMatcher
 }
-import org.http4s.{EntityDecoder, HttpRoutes, QueryParamDecoder}
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
+import org.http4s.{EntityDecoder, HttpRoutes, QueryParamDecoder}
 
 class PetEndpoints[F[_]: Effect] extends Http4sDsl[F] {
   implicit val petDecoder: EntityDecoder[F, Pet] = jsonOf[F, Pet]

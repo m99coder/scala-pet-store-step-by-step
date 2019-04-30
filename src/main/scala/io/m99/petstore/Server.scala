@@ -2,13 +2,18 @@ package io.m99.petstore
 
 import cats.effect._
 import cats.syntax.functor._
+import cats.syntax.semigroupk._
 import doobie.util.ExecutionContexts
 import io.circe.config.parser
 import io.m99.petstore.config.{DatabaseConfig, PetStoreConfig}
+import io.m99.petstore.domain.orders.OrderService
 import io.m99.petstore.domain.pets.{PetService, PetValidationInterpreter}
-import io.m99.petstore.infrastructure.endpoint.PetEndpoints
-import io.m99.petstore.infrastructure.repository.doobie.DoobiePetRepositoryInterpreter
-import org.http4s.implicits._
+import io.m99.petstore.infrastructure.endpoint.{OrderEndpoints, PetEndpoints}
+import io.m99.petstore.infrastructure.repository.doobie.{
+  DoobieOrderRepositoryInterpreter,
+  DoobiePetRepositoryInterpreter
+}
+import org.http4s.syntax.kleisli._
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.{Router, Server => H4Server}
 
@@ -20,11 +25,13 @@ object Server extends IOApp {
       fixedThreadPool  <- ExecutionContexts.fixedThreadPool[F](conf.database.connections.poolSize)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool[F]
       transactor       <- DatabaseConfig.transactor(conf.database, fixedThreadPool, cachedThreadPool)
-      petRepository = DoobiePetRepositoryInterpreter[F](transactor)
-      petValidation = PetValidationInterpreter[F](petRepository)
-      petService    = PetService[F](petRepository, petValidation)
-      services      = PetEndpoints.endpoints[F](petService)
-      httpApp       = Router("/" -> services).orNotFound
+      petRepository   = DoobiePetRepositoryInterpreter[F](transactor)
+      petValidation   = PetValidationInterpreter[F](petRepository)
+      petService      = PetService[F](petRepository, petValidation)
+      orderRepository = DoobieOrderRepositoryInterpreter[F](transactor)
+      orderService    = OrderService[F](orderRepository)
+      services        = PetEndpoints.endpoints[F](petService) <+> OrderEndpoints.endpoints[F](orderService)
+      httpApp         = Router("/" -> services).orNotFound
       _ <- Resource.liftF(DatabaseConfig.initializeDb(conf.database))
       server <- BlazeServerBuilder[F]
         .bindHttp(conf.server.port, conf.server.host)

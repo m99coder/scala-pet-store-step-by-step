@@ -2,15 +2,15 @@ package io.m99.petstore.infrastructure.repository.doobie
 
 import cats.Monad
 import cats.data.{NonEmptyList, OptionT}
-import cats.implicits._
+import cats.syntax.functor._
+import cats.syntax.option._
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
-import doobie.util.{fragments => Fragments}
-import doobie.util.Meta
 import doobie.util.fragment.Fragment
 import doobie.util.query.Query0
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update0
+import doobie.util.{Meta, fragments => Fragments}
 import io.m99.petstore.domain.pets.{Pet, PetRepositoryAlgebra, PetStatus}
 
 private object PetSQL {
@@ -24,7 +24,7 @@ private object PetSQL {
     Meta[String].imap(_.split(',').toSet)(_.mkString(","))
 
   def insert(pet: Pet): Update0 =
-    sql"""INSERT INTO pets(name, category, bio, status, tags, photo_urls)
+    sql"""INSERT INTO pets (name, category, bio, status, tags, photo_urls)
           VALUES (${pet.name}, ${pet.category}, ${pet.bio}, ${pet.status}, ${pet.tags}, ${pet.photoUrls})
       """.update
 

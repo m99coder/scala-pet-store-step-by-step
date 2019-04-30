@@ -2,7 +2,9 @@ package io.m99.petstore.domain.pets
 
 import cats.Monad
 import cats.data.EitherT
-import cats.implicits._
+import cats.syntax.applicative._
+import cats.syntax.either._
+import cats.syntax.functor._
 import io.m99.petstore.domain.{PetAlreadyExistsError, PetNotFoundError}
 
 class PetValidationInterpreter[F[_]: Monad](repositoryAlgebra: PetRepositoryAlgebra[F])

@@ -6,3 +6,5 @@ sealed trait ValidationError extends Product with Serializable
 
 case class PetAlreadyExistsError(pet: Pet) extends ValidationError
 case object PetNotFoundError               extends ValidationError
+
+case object OrderNotFoundError extends ValidationError
