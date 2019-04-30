@@ -4,7 +4,7 @@ import cats.effect.Effect
 import cats.implicits._
 import io.circe.generic.auto._
 import io.circe.syntax._
-import io.m99.petstore.domain.PetNotFoundError
+import io.m99.petstore.domain.{PetAlreadyExistsError, PetNotFoundError}
 import io.m99.petstore.domain.pets.{Pet, PetService}
 import org.http4s.{EntityDecoder, HttpRoutes}
 import org.http4s.circe._
@@ -16,11 +16,16 @@ class PetEndpoints[F[_]: Effect] extends Http4sDsl[F] {
   private def createPetEndpoint(petService: PetService[F]): HttpRoutes[F] =
     HttpRoutes.of[F] {
       case req @ POST -> Root / "pets" =>
-        for {
+        val action = for {
           pet    <- req.as[Pet]
-          result <- petService.create(pet)
-          resp   <- Ok(result.asJson)
-        } yield resp
+          result <- petService.create(pet).value
+        } yield result
+
+        action.flatMap {
+          case Right(saved) => Ok(saved.asJson)
+          case Left(PetAlreadyExistsError(existing)) =>
+            Conflict(s"The pet ${existing.name} of category ${existing.category} already exists")
+        }
     }
 
   private def updatePetEndpoint(petService: PetService[F]): HttpRoutes[F] =
@@ -56,11 +61,21 @@ class PetEndpoints[F[_]: Effect] extends Http4sDsl[F] {
         } yield resp
     }
 
+  private def listPetsEndpoint(petService: PetService[F]): HttpRoutes[F] =
+    HttpRoutes.of[F] {
+      case GET -> Root / "pets" =>
+        for {
+          retrieved <- petService.list
+          resp      <- Ok(retrieved.asJson)
+        } yield resp
+    }
+
   def endpoints(petService: PetService[F]): HttpRoutes[F] =
     createPetEndpoint(petService) <+>
       updatePetEndpoint(petService) <+>
       getPetEndpoint(petService) <+>
-      deletePetEndpoint(petService)
+      deletePetEndpoint(petService) <+>
+      listPetsEndpoint(petService)
 }
 
 object PetEndpoints {

@@ -1,11 +1,13 @@
 package io.m99.petstore.infrastructure.repository.doobie
 
 import cats.Monad
-import cats.data.OptionT
+import cats.data.{NonEmptyList, OptionT}
 import cats.implicits._
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
+import doobie.util.{fragments => Fragments}
 import doobie.util.Meta
+import doobie.util.fragment.Fragment
 import doobie.util.query.Query0
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update0
@@ -40,6 +42,30 @@ private object PetSQL {
 
   def delete(id: Long): Update0 =
     sql"""DELETE FROM pets WHERE id = $id""".update
+
+  def selectByNameAndCategory(name: String, category: String): Query0[Pet] =
+    sql"""SELECT name, category, bio, status, tags, photo_urls, id
+          FROM pets
+          WHERE name = $name AND category = $category
+       """.query[Pet]
+
+  def selectAll: Query0[Pet] =
+    sql"""SELECT name, category, bio, status, tags, photo_urls, id
+          FROM pets
+          ORDER BY name
+       """.query
+
+  def selectByStatus(statuses: NonEmptyList[PetStatus]): Query0[Pet] =
+    (sql"""SELECT name, category, bio, status, tags, photo_urls, id
+           FROM pets
+           WHERE """ ++ Fragments.in(fr"status", statuses)).query
+
+  def selectTagLikeString(tags: NonEmptyList[String]): Query0[Pet] = {
+    val tagLikeString: String = tags.toList.mkString("tags LIKE '%", "%' OR tags LIKE '%", "%'")
+    (sql"""SELECT name, category, bio, status, tags, photo_urls, id
+           FROM pets
+           WHERE """ ++ Fragment.const(tagLikeString)).query[Pet]
+  }
 }
 
 class DoobiePetRepositoryInterpreter[F[_]: Monad](val transactor: Transactor[F])
@@ -63,6 +89,19 @@ class DoobiePetRepositoryInterpreter[F[_]: Monad](val transactor: Transactor[F])
 
   def delete(id: Long): F[Option[Pet]] =
     OptionT(get(id)).semiflatMap(pet => PetSQL.delete(id).run.transact(transactor).as(pet)).value
+
+  def findByNameAndCategory(name: String, category: String): F[Set[Pet]] =
+    selectByNameAndCategory(name, category).to[List].transact(transactor).map(_.toSet)
+
+  def list: F[List[Pet]] =
+    selectAll.to[List].transact(transactor)
+
+  def findByStatus(statuses: NonEmptyList[PetStatus]): F[List[Pet]] =
+    selectByStatus(statuses).to[List].transact(transactor)
+
+  def findByTag(tags: NonEmptyList[String]): F[List[Pet]] =
+    selectTagLikeString(tags).to[List].transact(transactor)
+
 }
 
 object DoobiePetRepositoryInterpreter {

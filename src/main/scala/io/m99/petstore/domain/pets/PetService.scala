@@ -1,13 +1,17 @@
 package io.m99.petstore.domain.pets
 
 import cats.Monad
-import cats.data.EitherT
+import cats.data.{EitherT, NonEmptyList}
 import cats.syntax.functor._
-import io.m99.petstore.domain.PetNotFoundError
+import io.m99.petstore.domain.{PetAlreadyExistsError, PetNotFoundError}
 
 class PetService[F[_]](repositoryAlgebra: PetRepositoryAlgebra[F],
                        validationAlgebra: PetValidationAlgebra[F]) {
-  def create(pet: Pet): F[Pet] = repositoryAlgebra.create(pet)
+  def create(pet: Pet)(implicit M: Monad[F]): EitherT[F, PetAlreadyExistsError, Pet] =
+    for {
+      _     <- validationAlgebra.doesAlreadyExist(pet)
+      saved <- EitherT.liftF(repositoryAlgebra.create(pet))
+    } yield saved
   def update(pet: Pet)(implicit M: Monad[F]): EitherT[F, PetNotFoundError.type, Pet] =
     for {
       _     <- validationAlgebra.doesNotExist(pet.id)
@@ -16,6 +20,12 @@ class PetService[F[_]](repositoryAlgebra: PetRepositoryAlgebra[F],
   def get(id: Long)(implicit M: Monad[F]): EitherT[F, PetNotFoundError.type, Pet] =
     EitherT.fromOptionF(repositoryAlgebra.get(id), PetNotFoundError)
   def delete(id: Long)(implicit M: Monad[F]): F[Unit] = repositoryAlgebra.delete(id).as(())
+
+  def list: F[List[Pet]] = repositoryAlgebra.list
+  def findByStatus(statuses: NonEmptyList[PetStatus]): F[List[Pet]] =
+    repositoryAlgebra.findByStatus(statuses)
+  def findByTag(tags: NonEmptyList[String]): F[List[Pet]] =
+    repositoryAlgebra.findByTag(tags)
 }
 
 object PetService {

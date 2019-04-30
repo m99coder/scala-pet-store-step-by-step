@@ -170,7 +170,7 @@ First we add our domain object `Pet` in `domain/pets/Pet.scala` and an Algebraic
 val EnumeratumCirceVersion = "1.5.20"
 
 libraryDependencies ++= Seq(
-  "com.beachape"   %% "enumeratum-circe" % EnumeratumCirceVersion
+  "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion
 )
 ```
 
@@ -300,5 +300,15 @@ $ curl -i \
     -X PUT http://localhost:8080/pets/1
     
 $ # Deleting a pet
-$ curl -i -X DELETE http://localhost:8080/pets/1 
+$ curl -i -X DELETE http://localhost:8080/pets/1
 ```
+
+## 9. Extend algebra and validations
+
+Now we extend our logic by three different parts:
+
+1. We add a new validation for an already existing pet based on name and category to `domain/ValidationError.scala` and adjust our validation algebra and interpreter accordingly
+2. We extend our algebra with a couple of convenience methods which will be used by our service and adjust the Doobie interpreter accordingly
+3. We finally also adjust our endpoint for creating a pet and add a list endpoint
+
+You can easily demo that the added logic works for case 1 by creating the same pet twice, which now results in a 409 Conflict response and for case 3 by calling `http://localhost:8080/pets` before and after having created a pet.
