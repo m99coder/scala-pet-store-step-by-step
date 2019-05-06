@@ -3,6 +3,55 @@
 > An implementation of the Java Pet Store using FP techniques in Scala  
 > An analysis of [https://github.com/pauljamescleary/scala-pet-store](https://github.com/pauljamescleary/scala-pet-store), explained step by step
 
+### Introduction
+
+#### Onion (or Hexagonal) Architecture
+
+[Onion architecture](https://jeffreypalermo.com/2008/07/the-onion-architecture-part-1/) is defined by four tenets:
+
+* The application is built around an independent object model
+* Inner layers define interfaces, outer layers implement interfaces
+* Direction of coupling is toward the center
+* All application core code can be compiled and run separate from infrastructure
+
+[Hexagonal architecture](https://java-design-patterns.com/patterns/hexagonal/)  has the intent to allow an application to equally be driven by users, programs, automated test or batch scripts, and to be developed and tested in isolation from its eventual run-time devices and databases.
+
+**The domain package** constitutes the things inside our domain. It is deliberately free of the ugliness of JDBC, JSON, HTTP, and the rest.
+
+1. `Service` – the coarse grained use cases that work with other domain concepts to realize your use cases
+2. `Repository` – ways to get data into and out of persistent storage. **Important: Repositories do not have any business logic in them, they should not know about the context in which they are used, and should not leak details of their implementations into the world.**
+3. `Models` – things like `Pet`, `Order`, and `User` are all domain objects. We keep these lean (i.e. free of behavior). All of the behavior comes via `Validations` and `Services`.
+
+Note that `Repository` is kind of like an *interface* in Java. It is a `trait` that is to be implemented elsewhere.
+
+**The infrastructure package** is where the ugliness lives. It has HTTP things, JDBC things, and the like.
+
+1. `Endpoint` – contains the HTTP endpoints that we surface via http4s. You will also typically see JSON things in here via circe.
+2. `Repository` – contains the JDBC code, implementations of our `Repositories`. We have 2 implementations, an in-memory version as well as a doobie version.
+
+**The config package** could be considered infrastructure, as it has nothing to do with the domain.
+
+#### Fitting it all together
+
+The idea with FP in general is to keep your domain pure, and to push the ugliness to the edges (which we achieve in part via DDD and Hexagonal Architecture). The way the application is bootstrapped is via the `Server` class. It’s job is to make sure that all the parts are configured and available so that our application can actually start up.
+
+The `Server` will:
+
+1. Load the configuration. If the user has not properly configured the app, it will not start.
+2. Connect to the database. Here, we also run Flyway migrations to make sure that the database is in good order. If the database cannot be connected to, the app will not start.
+3. Create our `Repositories` and `Services`. This wires together our domain. We do not use any kind of dependency injection framework, rather we pass instances where needed using Constructors.
+4. Bind to our port and expose our services. If the port is unavailable, the app will not start.
+
+#### What is with this `F` thing?
+
+You see in most of the core domain that we use `F[_]` in a lot of places. This is called a *higher kinded type*, and simply represents a type that holds (or works with) another type. For example, `List` and `Option` are examples of types that hold other types, like `List[Int]` or `Option[String]`.
+
+We use `F[_]` to mean “some effect type”. We can leave this abstract, and bind to it “at the end of the world” in the `Server` when we bootstrap the application. This demonstrates the idea of late binding, leave your code abstract and only bind to it when absolutely necessary.
+
+When you see a signature like `def update(pet: Pet)(implicit M: Monad[F])`, we are saying that the `F[_]` thing must have a `Monad` type class available at the call site.
+
+In this application, we use cats effect `IO` as our effect type, and use cats for Monads and other FP type classes and data types. We could just as easily use scalazIO and scalaz in an alternative implementation without changing the code dramatically.
+
 **Usage**
 
 Every step is accessible via a respective tag, e.g. `step-2`, like this:
