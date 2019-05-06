@@ -397,3 +397,53 @@ $ curl -i \
         }' \
     -X POST http://localhost:8080/login
 ```
+
+## 14. Testing
+
+For testing purposes we complement our Doobie based repository code with an in-memory variant in the folder `infrastructure/repository/inmemory`. Now we move to `/src/test/scala/io/m99/petstore` as the root folder. Next step is to define so called “arbitraries” for our property-based tests in `PetStoreArbitraries.scala`. After that we add tests for the endpoints to `infrastructure/endpoint`. The last thing we add are query type checks for the Doobie based repositories to `infrastructure/repository/doobie`.
+
+To make it work, we need to add some dependencies to our `/build.sbt`.
+
+```scala
+val ScalaCheckVersion = "1.14.0"
+val ScalaTestVersion  = "3.0.7"
+
+libraryDependencies ++= Seq(
+  "org.tpolecat"   %% "doobie-scalatest"    % DoobieVersion % Test,
+  "org.http4s"     %% "http4s-blaze-client" % Http4sVersion % Test,
+  "org.scalacheck" %% "scalacheck"          % ScalaCheckVersion % Test,
+  "org.scalatest"  %% "scalatest"           % ScalaTestVersion % Test
+)
+```
+
+Finally, we can run our tests.
+
+```bash
+$ sbt test
+[info] OrderEndpointsSpec:
+[info] - place order
+[info] PetEndpointsSpec:
+[info] - create pet
+[info] - update pet
+[info] UserQueryTypeCheckSpec:
+[info] - Type check user queries
+[info] OrderQueryTypeCheckSpec:
+[info] - Type check order queries
+[info] PetQueryTypeCheckSpec:
+[info] - Type check pet queries
+[info] UserEndpointsSpec:
+[info] - create user
+[info] - update user
+[info] - get user by userName
+[info] - delete user by userName
+[info] ScalaTest
+[info] Run completed in 4 seconds, 832 milliseconds.
+[info] Total number of tests run: 10
+[info] Suites: completed 6, aborted 0
+[info] Tests: succeeded 10, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[info] Passed: Total 10, Failed 0, Errors 0, Passed 10
+[success] Total time: 7 s, completed May 6, 2019 12:02:38 PM
+```
+
+We are done :) Thanks for reading.

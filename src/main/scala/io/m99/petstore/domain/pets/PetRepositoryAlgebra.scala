@@ -10,6 +10,6 @@ trait PetRepositoryAlgebra[F[_]] {
 
   def findByNameAndCategory(name: String, category: String): F[Set[Pet]]
   def list(limit: Int, offset: Int): F[List[Pet]]
-  def findByStatus(status: NonEmptyList[PetStatus]): F[List[Pet]]
+  def findByStatus(statuses: NonEmptyList[PetStatus]): F[List[Pet]]
   def findByTag(tags: NonEmptyList[String]): F[List[Pet]]
 }
