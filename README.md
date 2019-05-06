@@ -52,7 +52,7 @@ When you see a signature like `def update(pet: Pet)(implicit M: Monad[F])`, we a
 
 In this application, we use cats effect `IO` as our effect type, and use cats for Monads and other FP type classes and data types. We could just as easily use scalazIO and scalaz in an alternative implementation without changing the code dramatically.
 
-**Usage**
+### Usage
 
 Every step is accessible via a respective tag, e.g. `step-2`, like this:
 
